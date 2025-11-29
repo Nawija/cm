@@ -38,16 +38,17 @@ CREATE TABLE modules (
 CREATE INDEX idx_modules_collection ON modules(collection_id);
 CREATE INDEX idx_modules_category ON modules(category);
 
--- VARIANTS (np. kolor, materiał, tkanina, system)
+-- VARIANTS (wspólne dla całej kolekcji!)
 CREATE TABLE module_variants (
   id SERIAL PRIMARY KEY,
-  module_id INT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+  collection_id INT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  attributes JSONB DEFAULT '{}', -- np. { "fabric": "Velvet 32", "color": "Gray" }
+  attributes JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_variants_module ON module_variants(module_id);
+CREATE INDEX idx_variants_collection ON module_variants(collection_id);
+
 
 -- PRICES (pełna elastyczność: ceny za wariant, rozmiar, grupę tkaniny itd.)
 CREATE TABLE prices (

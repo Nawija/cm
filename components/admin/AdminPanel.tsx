@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { getProducers } from "@/app/admin/actions/producers";
 import ProducersTable from "./ProducersTable";
 import CollectionsTable from "./CollectionsTable";
-import ModulesTable from "./ModulesTable";
-import VariantsTable from "./VariantsTable";
-import PricesTable from "./PricesTable";
+import ModuleEditor from "./ModuleEditor";
 
 export default function AdminPanel() {
     const [producers, setProducers] = useState<any[]>([]);
@@ -47,27 +45,9 @@ export default function AdminPanel() {
                     }}
                 />
             )}
-
             {selectedCollection && (
-                <ModulesTable
-                    collectionId={selectedCollection}
-                    selectedModule={selectedModule}
-                    setSelectedModule={(id) => {
-                        setSelectedModule(id);
-                        setSelectedVariant(null);
-                    }}
-                />
+                <ModuleEditor collectionId={selectedCollection} />
             )}
-
-            {selectedModule && (
-                <VariantsTable
-                    moduleId={selectedModule}
-                    selectedVariant={selectedVariant}
-                    setSelectedVariant={setSelectedVariant}
-                />
-            )}
-
-            {selectedVariant && <PricesTable variantId={selectedVariant} />}
         </div>
     );
 }

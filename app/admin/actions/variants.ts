@@ -1,33 +1,33 @@
-// app/admin/actions/variants.ts
 "use server";
 
 import { db } from "@/lib/db";
 import type { ModuleVariant } from "@/types/catalog";
 
 export async function getVariants(
-    module_id?: number
+    collection_id?: number
 ): Promise<ModuleVariant[]> {
-    const rows = module_id
-        ? await db`SELECT * FROM module_variants WHERE module_id = ${module_id} ORDER BY name`
+    const rows = collection_id
+        ? await db`SELECT * FROM module_variants WHERE collection_id = ${collection_id} ORDER BY name`
         : await db`SELECT * FROM module_variants ORDER BY name`;
+
     return rows as ModuleVariant[];
 }
 
 export async function createVariant(
     formData: FormData
 ): Promise<ModuleVariant> {
-    const module_id = Number(formData.get("module_id"));
+    const collection_id = Number(formData.get("collection_id"));
     const name = String(formData.get("name") ?? "").trim();
-    const attributes = formData.get("attributes")
-        ? JSON.parse(String(formData.get("attributes")))
-        : {};
 
-    if (!module_id || !name) throw new Error("Brak modułu lub nazwy wariantu");
+    if (!collection_id || !name) {
+        throw new Error("Brak kolekcji lub nazwy wariantu");
+    }
 
     const inserted = await db`
-    INSERT INTO module_variants (module_id, name, attributes)
-    VALUES (${module_id}, ${name}, ${attributes})
-    RETURNING *`;
+        INSERT INTO module_variants (collection_id, name, attributes)
+        VALUES (${collection_id}, ${name}, ${JSON.stringify({})})
+        RETURNING *;
+    `;
 
     return inserted[0] as ModuleVariant;
 }
@@ -37,26 +37,22 @@ export async function updateVariant(
 ): Promise<ModuleVariant> {
     const id = Number(formData.get("id"));
     const name = String(formData.get("name") ?? "").trim();
-    const attributes = formData.get("attributes")
-        ? JSON.parse(String(formData.get("attributes")))
-        : {};
 
-    if (!id || !name) throw new Error("Brak id lub nazwy wariantu");
+    if (!id || !name) throw new Error("Brak id lub nazwy");
 
     const updated = await db`
-    UPDATE module_variants
-    SET name = ${name}, attributes = ${attributes}
-    WHERE id = ${id}
-    RETURNING *`;
+        UPDATE module_variants
+        SET name = ${name}
+        WHERE id = ${id}
+        RETURNING *;
+    `;
 
     return updated[0] as ModuleVariant;
 }
 
-export async function deleteVariant(
-    formData: FormData
-): Promise<{ success: boolean }> {
+export async function deleteVariant(formData: FormData) {
     const id = Number(formData.get("id"));
-    if (!id) throw new Error("Brak id wariantu");
+    if (!id) throw new Error("Brak id");
 
     await db`DELETE FROM module_variants WHERE id = ${id}`;
     return { success: true };

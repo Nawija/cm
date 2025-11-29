@@ -1,70 +1,115 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getPrices, createPrice } from "@/app/admin/actions/prices";
-import { MainButton } from "@/components/ui/main-button";
+import { useEffect, useState } from "react";
+import {
+    createPrice,
+    getPrices,
+    updatePrice,
+} from "@/app/admin/actions/prices";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
-interface Props {
+interface PricesTableProps {
     variantId: number;
 }
 
-export default function PricesTable({ variantId }: Props) {
-    const [prices, setPrices] = useState<any[]>([]);
-    const [price, setPrice] = useState<number>(0);
+const GROUPS = [
+    { label: "Grupa 1", key: "grupa_1" },
+    { label: "Grupa 2", key: "grupa_2" },
+    { label: "Grupa 3", key: "grupa_3" },
+    { label: "Grupa 4", key: "grupa_4" },
+];
 
-    const loadPrices = async () => {
+export default function PricesTable({ variantId }: PricesTableProps) {
+    const [prices, setPrices] = useState<Record<string, any>>({});
+    const [loading, setLoading] = useState(false);
+
+    async function refresh() {
+        setLoading(true);
+
         const rows = await getPrices(variantId);
-        setPrices(rows);
-    };
+        const map: Record<string, any> = {};
+
+        rows.forEach((p) => {
+            map[p.price_type] = p; // KLUCZ ZE ZGODNYM price_type
+        });
+
+        setPrices(map);
+        setLoading(false);
+    }
 
     useEffect(() => {
-        if (variantId) loadPrices();
+        setPrices({});
+        refresh(); // wczytaj dane za każdym razem gdy zmienia się wariant
     }, [variantId]);
 
-    const handleAdd = async () => {
-        const fd = new FormData();
-        fd.set("variant_id", String(variantId));
-        fd.set("price", String(price));
-        const newPrice = await createPrice(fd);
-        setPrice(0);
-        loadPrices();
-    };
+    async function handleChange(priceType: string, rawValue: string) {
+        const num = Number(rawValue);
+        if (isNaN(num)) return;
+
+        const existing = prices[priceType];
+
+        // Optimistyczny update – ale po zapisie i tak będzie refresh
+        setPrices((prev) => ({
+            ...prev,
+            [priceType]: { ...(prev[priceType] || {}), price: num },
+        }));
+
+        if (existing?.id) {
+            const fd = new FormData();
+            fd.append("id", existing.id);
+            fd.append("price", num.toString());
+            fd.append("currency", "PLN");
+            fd.append("price_type", priceType);
+
+            await updatePrice(fd);
+        } else {
+            const fd = new FormData();
+            fd.append("variant_id", String(variantId));
+            fd.append("price", String(num));
+            fd.append("currency", "PLN");
+            fd.append("price_type", priceType);
+
+            await createPrice(fd);
+        }
+
+        // Po zapisie zawsze pobierz świeże dane z bazy
+        await refresh();
+    }
 
     return (
-        <div className="bg-white p-4 rounded shadow space-y-3">
-            <h3 className="text-lg font-semibold">Ceny</h3>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        >
+            {GROUPS.map(({ label, key }) => (
+                <Card
+                    key={key}
+                    className="p-4 rounded-xl bg-white shadow-sm border"
+                >
+                    <Label className="block mb-2 font-medium">{label}</Label>
 
-            <div className="flex gap-2">
-                <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    placeholder="Cena"
-                    className="border p-2 rounded flex-1"
-                />
-                <MainButton onClick={handleAdd}>Dodaj</MainButton>
-            </div>
+                    <Input
+                        type="number"
+                        value={prices[key]?.price ?? ""} // zawsze controlled
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        placeholder="Cena..."
+                        className="text-sm"
+                    />
 
-            <table className="w-full table-auto border-collapse">
-                <thead>
-                    <tr className="bg-gray-100">
-                        <th className="p-2 border">ID</th>
-                        <th className="p-2 border">Cena</th>
-                        <th className="p-2 border">Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {prices.map((p) => (
-                        <tr key={p.id}>
-                            <td className="p-2 border">{p.id}</td>
-                            <td className="p-2 border">{p.price}</td>
-                            <td className="p-2 border">
-                                {/* Edycja / Usuwanie */}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    {loading && !prices[key] && (
+                        <div className="flex items-center gap-2 text-xs mt-2 text-gray-400">
+                            <Loader2 className="animate-spin w-3 h-3" />
+                            Ładowanie...
+                        </div>
+                    )}
+                </Card>
+            ))}
+        </motion.div>
     );
 }
