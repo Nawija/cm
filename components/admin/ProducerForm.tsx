@@ -2,8 +2,7 @@
 
 import React, { useState } from "react";
 import type { Producer } from "@/types/catalog";
-import { createProducer } from "@/app/admin/actions/createProducer";
-import { updateProducer } from "@/app/admin/actions/updateProducer";
+import { createProducer, updateProducer } from "@/app/admin/actions/producers";
 import { Button } from "@/components/ui/button";
 
 interface Props {

@@ -1,6 +1,7 @@
 // app/admin/page.tsx
 
-import { getProducers } from "./actions/getProducers";
+import AdminPanel from "@/components/admin/AdminPanel";
+import { getProducers } from "./actions/producers";
 import ProducersClient from "@/components/admin/ProducersClient";
 
 export default async function AdminPage() {
@@ -12,7 +13,7 @@ export default async function AdminPage() {
                 Panel admina — producenci
             </h1>
             {/* Przekazujemy dane do komponentu klienckiego */}
-            <ProducersClient initialProducers={producers} />
+            <AdminPanel  />
         </div>
     );
 }

@@ -2,7 +2,7 @@
 
 import type { Producer } from "@/types/catalog";
 import { Trash2, Edit } from "lucide-react";
-import { deleteProducer } from "@/app/admin/actions/deleteProducer";
+import { deleteProducer } from "@/app/admin/actions/producers";
 
 interface Props {
     producer: Producer;
